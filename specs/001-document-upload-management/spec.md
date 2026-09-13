@@ -5,6 +5,11 @@
 **Status**: Draft  
 **Input**: User description: "StakeholderDocs/document-upload-and-management-feature.md"
 
+## Clarifications
+
+### Session 2026-09-13
+- Q: Should the document feature treat malware and virus scanning as a required secure-storage abstraction with a placeholder service contract, instead of requiring a specific antivirus product or cloud integration? → A: A
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Upload and organize work documents (Priority: P1)
@@ -68,7 +73,7 @@ A document owner or project manager needs to control access to uploaded document
 - **FR-003**: The system MUST automatically capture upload date and time, uploader identity, file size, and MIME type information for each document record.
 - **FR-004**: The system MUST validate incoming files against the supported type list and the 25 MB per-file size limit before accepting them for storage.
 - **FR-005**: The system MUST reject unsupported files or oversized files with clear user-facing validation messages.
-- **FR-006**: The system MUST scan uploaded files for malware and virus risk before storage, and store files securely with role-aware access controls.
+- **FR-006**: The system MUST require a malware and virus risk scanning abstraction before storage and must store files securely with role-aware access controls through a secure file storage service abstraction.
 - **FR-007**: The system MUST provide user-visible upload progress, success, and error feedback during the document upload process.
 - **FR-008**: The system MUST allow users to browse a personal documents list showing document title, category, upload date, file size, and associated project.
 - **FR-009**: The system MUST allow users to sort and filter document lists by title, upload date, category, file size, associated project, and date range.
