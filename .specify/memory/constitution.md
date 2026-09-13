@@ -1,50 +1,48 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: 0.0.0 → 1.0.0
+List of modified principles: placeholder scaffold → ContosoDashboard principles
+Added sections: Additional Constraints, Development Workflow
+Removed sections: none
+Follow-up TODOs:
+- TODO(RATIFICATION_DATE): original adoption date is not recorded in the repository; set from project history if available.
+-->
+
+# ContosoDashboard Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Security and User Isolation
+All user-facing behavior must protect authenticated identity, enforce role-aware access, and prevent data leakage between project members. The application must keep mock authentication, claims-based authorization, and service-level checks aligned with the training scenario and user privacy expectations.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Project and Task Clarity
+Every workflow must be understandable from a user perspective and tied to clear project, task, notification, and profile artifacts. Controllers, services, and Razor pages must expose consistent names and state transitions so the training dashboard remains straightforward and traceable.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Test-First Delivery
+Before implementation, requirements must be expressed in a testable form, a failing verification must exist, and the final change must be shown to pass that proof. No feature or bug fix may be accepted without evidence that the behavior was validated.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Integration Integrity
+The data model, business services, pages, and UI must stay connected across the repository. Changes to a model, service contract, or page should be reviewed together with downstream usage so data-binding, navigation, authorization, and notifications remain consistent.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simplicity and Maintainability
+The codebase must stay simple, explicit, and explainable for a training context. Prefer obvious service boundaries, reusable patterns, and small changes over clever abstractions that obscure business intent.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Additional Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+The project is an ASP.NET Core Blazor Server training application built around mock authentication, role-aware authorization, and sample data services. It must remain suitable for offline learning and avoid introducing production-only infrastructure, external identity dependencies, or cloud service assumptions into the repository.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+The repository must preserve the documented separation of concerns across Models, Data, Services, Pages, and Shared UI resources. Security controls, user isolation, and authorization checks must remain visible and reviewable in the codebase.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
+
+Every change must be introduced through an identified requirement or scenario and must be reflected consistently in the code, tests, and user-facing behavior. When a new feature is added, the implementation must keep a clear data flow through the service layer and the page or component that presents the result.
+
+Review and validation must confirm that authentication and authorization remain consistent with the repository’s mock security model, that tasks and projects retain clear ownership and visibility boundaries, and that no UI or service path silently bypasses the existing access conventions.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This Constitution governs the ContosoDashboard repository and supersedes any informal practices that conflict with it. Amendments require a documented change reason, a version update, and a review of the principles affected by the update.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+All pull requests and repository reviews must verify that the current constitution remains satisfied by the work. Principle changes and process changes must be explained in a way that preserves alignment between the project documentation, implementation, and evidence of verification.
+
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): original adoption date is not recorded in the repository; set from project history if available. | **Last Amended**: 2026-09-13
