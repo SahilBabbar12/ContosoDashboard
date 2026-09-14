@@ -1,0 +1,188 @@
+@page "/documents"
+@attribute [Authorize]
+@using ContosoDashboard.Services
+@using ContosoDashboard.Models
+@using System.IO
+@inject DocumentService DocumentService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Documents - ContosoDashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Documents</h1>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" @onclick="ShowUploadForm">Upload Document</button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="alert @(string.IsNullOrWhiteSpace(_error) ? "alert-success" : "alert-danger")">
+            @_message
+        </div>
+    }
+
+    @if (_showUploadForm)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Upload a Document</h3>
+
+                <EditForm Model="_uploadRequest" OnValidSubmit="SubmitUpload">
+                    <DataAnnotationsValidator />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Title</label>
+                            <InputText class="form-control" @bind-Value="_uploadRequest.Title" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <InputSelect class="form-select" @bind-Value="_uploadRequest.Category">
+                                @foreach (var category in Enum.GetValues<DocumentCategory>())
+                                {
+                                    <option value="@category">@category</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <InputTextArea class="form-control" @bind-Value="_uploadRequest.Description" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tags</label>
+                            <InputText class="form-control" @bind-Value="_uploadRequest.Tags" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Project</label>
+                            <InputNumber class="form-control" @bind-Value="_uploadRequest.ProjectId" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">File</label>
+                            <InputFile OnChange="HandleFileSelected" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button class="btn btn-success" type="submit">Upload</button>
+                        <button class="btn btn-secondary" type="button" @onclick="CancelForm">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private const long MaxUploadBytes = 25 * 1024 * 1024;
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg", ".gif", ".txt"
+    };
+
+    private readonly DocumentUploadRequest _uploadRequest = new();
+    private bool _showUploadForm;
+    private string? _message;
+    private string? _error;
+    private IBrowserFile? _selectedFile;
+
+    private void ShowUploadForm() => _showUploadForm = true;
+
+    private void CancelForm()
+    {
+        _showUploadForm = false;
+        _message = null;
+        _error = null;
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _uploadRequest.FileName = _selectedFile.Name;
+        _uploadRequest.FileSizeBytes = _selectedFile.Size;
+        _uploadRequest.ContentType = _selectedFile.ContentType;
+
+        var friendlyError = ValidateSelectedFile(_selectedFile);
+        if (friendlyError is not null)
+        {
+            _error = friendlyError;
+            _message = friendlyError;
+        }
+        else
+        {
+            _error = null;
+            _message = null;
+        }
+    }
+
+    private string? ValidateSelectedFile(IBrowserFile file)
+    {
+        var extension = Path.GetExtension(file.Name);
+        if (!AllowedExtensions.Contains(extension))
+        {
+            return "Unsupported file type. Please upload a supported business document such as PDF, Word, Excel, PowerPoint, image, or text.";
+        }
+
+        if (file.Size > MaxUploadBytes)
+        {
+            return "The selected file is larger than the 25 MB limit. Please choose a file that is 25 MB or smaller.";
+        }
+
+        return null;
+    }
+
+    private async Task SubmitUpload()
+    {
+        if (_selectedFile == null)
+        {
+            _error = "Please choose a supported file before uploading.";
+            _message = _error;
+            return;
+        }
+
+        var selectedFileError = ValidateSelectedFile(_selectedFile);
+        if (selectedFileError is not null)
+        {
+            _error = selectedFileError;
+            _message = selectedFileError;
+            return;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _error = "You must be signed in to upload documents.";
+            _message = _error;
+            return;
+        }
+
+        _uploadRequest.FileSizeBytes = _selectedFile.Size;
+
+        try
+        {
+            using var stream = _selectedFile.OpenReadStream(MaxUploadBytes + 1024);
+            var result = await DocumentService.UploadAsync(_uploadRequest, stream, userId);
+
+            _message = result.Success ? result.Message : result.Message;
+            _error = result.Success ? null : result.Message;
+
+            if (result.Success)
+            {
+                _showUploadForm = false;
+                _uploadRequest.Title = string.Empty;
+                _uploadRequest.Description = string.Empty;
+                _uploadRequest.Tags = string.Empty;
+                _uploadRequest.ProjectId = null;
+                _selectedFile = null;
+            }
+        }
+        catch (IOException)
+        {
+            _error = "The selected file is larger than the 25 MB limit. Please choose a file that is 25 MB or smaller.";
+            _message = _error;
+        }
+    }
+}

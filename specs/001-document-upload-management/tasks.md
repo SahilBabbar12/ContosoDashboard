@@ -17,9 +17,9 @@
 
 **Purpose**: Create the document feature scaffold and align it with the repository’s existing services and pages.
 
-- [ ] T001 [P] Create a document storage directory and metadata folder conventions in `ContosoDashboard/AppData/uploads/`
-- [ ] T002 [P] Register the local file storage and malware scan abstractions in `ContosoDashboard/Program.cs`
-- [ ] T003 [P] Extend `ContosoDashboard/Data/ApplicationDbContext.cs` for Document, DocumentShare, and DocumentActivityLog entity mapping
+- [X] T001 [P] Create a document storage directory and metadata folder conventions in `ContosoDashboard/AppData/uploads/`
+- [X] T002 [P] Register the local file storage and malware scan abstractions in `ContosoDashboard/Program.cs`
+- [X] T003 [P] Extend `ContosoDashboard/Data/ApplicationDbContext.cs` for Document, DocumentShare, and DocumentActivityLog entity mapping
 
 ---
 
@@ -29,14 +29,14 @@
 
 **Checkpoint**: Foundation ready - document upload, browse, search, and sharing services can now begin in parallel.
 
-- [ ] T004 Add the `Document` entity shape and required metadata fields in `ContosoDashboard/Models/Document.cs`
-- [ ] T005 [P] Add the `DocumentShare` relationship model in `ContosoDashboard/Models/DocumentShare.cs`
-- [ ] T006 [P] Add the `DocumentActivityLog` audit model in `ContosoDashboard/Models/DocumentActivityLog.cs`
-- [ ] T007 [P] Add the `IFileStorageService` interface contract in `ContosoDashboard/Services/IFileStorageService.cs`
-- [ ] T008 [P] Add the `IMalwareScanService` interface contract in `ContosoDashboard/Services/IMalwareScanService.cs`
-- [ ] T009 Implement `LocalFileStorageService` in `ContosoDashboard/Services/LocalFileStorageService.cs`
-- [ ] T010 Implement `PlaceholderMalwareScanService` in `ContosoDashboard/Services/PlaceholderMalwareScanService.cs`
-- [ ] T011 Create a `DocumentService` validation and orchestration layer in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T004 Add the `Document` entity shape and required metadata fields in `ContosoDashboard/Models/Document.cs`
+- [X] T005 [P] Add the `DocumentShare` relationship model in `ContosoDashboard/Models/DocumentShare.cs`
+- [X] T006 [P] Add the `DocumentActivityLog` audit model in `ContosoDashboard/Models/DocumentActivityLog.cs`
+- [X] T007 [P] Add the `IFileStorageService` interface contract in `ContosoDashboard/Services/IFileStorageService.cs`
+- [X] T008 [P] Add the `IMalwareScanService` interface contract in `ContosoDashboard/Services/IMalwareScanService.cs`
+- [X] T009 Implement `LocalFileStorageService` in `ContosoDashboard/Services/LocalFileStorageService.cs`
+- [X] T010 Implement `PlaceholderMalwareScanService` in `ContosoDashboard/Services/PlaceholderMalwareScanService.cs`
+- [X] T011 Create a `DocumentService` validation and orchestration layer in `ContosoDashboard/Services/DocumentService.cs`
 
 ---
 
@@ -48,11 +48,11 @@
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Add upload request validation and the allowed file-type and 25 MB checks in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T013 [P] [US1] Add GUID-safe, non-web path generation and upload persistence in `ContosoDashboard/Services/LocalFileStorageService.cs`
-- [ ] T014 [US1] Add the upload success, error, and progress message handling in `ContosoDashboard/Pages/Documents.razor`
-- [ ] T015 [US1] Create the document upload page and metadata form in `ContosoDashboard/Pages/Documents.razor`
-- [ ] T016 [US1] Capture activity audit records for upload and rejection events in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T012 [P] [US1] Add upload request validation and the allowed file-type and 25 MB checks in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T013 [P] [US1] Add GUID-safe, non-web path generation and upload persistence in `ContosoDashboard/Services/LocalFileStorageService.cs`
+- [X] T014 [US1] Add the upload success, error, and progress message handling in `ContosoDashboard/Pages/Documents.razor`
+- [X] T015 [US1] Create the document upload page and metadata form in `ContosoDashboard/Pages/Documents.razor`
+- [X] T016 [US1] Capture activity audit records for upload and rejection events in `ContosoDashboard/Services/DocumentService.cs`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently.
 
