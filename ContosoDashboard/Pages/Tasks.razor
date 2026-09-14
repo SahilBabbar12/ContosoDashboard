@@ -3,8 +3,10 @@
 @using ContosoDashboard.Models
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
+@using System.IO
 @attribute [Authorize]
 @inject ITaskService TaskService
+@inject DocumentService DocumentService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>My Tasks - ContosoDashboard</PageTitle>
@@ -123,9 +125,14 @@
                                 }
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewTaskDetails(task.TaskId)">
-                                    <i class="bi bi-eye"></i>
-                                </button>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewTaskDetails(task.TaskId)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" @onclick="() => BeginTaskDocumentAttachment(task)">
+                                        <i class="bi bi-paperclip"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -135,11 +142,59 @@
     }
 </div>
 
+@if (_taskAttachmentTaskId.HasValue)
+{
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3 class="card-title">Attach Document to Task</h3>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Title</label>
+                    <input class="form-control" @bind="_taskAttachmentTitle" placeholder="Document title" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" @bind="_taskAttachmentCategory">
+                        @foreach (var category in Enum.GetValues<DocumentCategory>())
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Project Id</label>
+                    <input class="form-control" @bind="_taskAttachmentProjectId" />
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">File</label>
+                    <InputFile class="form-control" OnChange="HandleTaskAttachmentFileSelected" />
+                </div>
+                <div class="col-md-12">
+                    <button class="btn btn-success" @onclick="SubmitTaskAttachment">Attach</button>
+                    <button class="btn btn-secondary" @onclick="CancelTaskAttachment">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
+    private const long MaxUploadBytes = 25 * 1024 * 1024;
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg", ".gif", ".txt"
+    };
+
     private List<TaskItem>? tasks;
     private string filterStatus = "";
     private string filterPriority = "";
     private int currentUserId = 0;
+    private string? _message;
+    private int? _taskAttachmentTaskId;
+    private string _taskAttachmentTitle = string.Empty;
+    private string _taskAttachmentCategory = DocumentCategory.Other.ToString();
+    private int? _taskAttachmentProjectId;
+    private IBrowserFile? _taskAttachmentFile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -188,6 +243,77 @@
     private void ViewTaskDetails(int taskId)
     {
         // TODO: Navigate to task details or show modal
+    }
+
+    private void BeginTaskDocumentAttachment(TaskItem task)
+    {
+        _taskAttachmentTaskId = task.TaskId;
+        _taskAttachmentTitle = task.Title;
+        _taskAttachmentCategory = DocumentCategory.ProjectDocuments.ToString();
+        _taskAttachmentProjectId = task.ProjectId;
+        _taskAttachmentFile = null;
+    }
+
+    private void CancelTaskAttachment()
+    {
+        _taskAttachmentTaskId = null;
+        _taskAttachmentTitle = string.Empty;
+        _taskAttachmentCategory = DocumentCategory.Other.ToString();
+        _taskAttachmentProjectId = null;
+        _taskAttachmentFile = null;
+    }
+
+    private void HandleTaskAttachmentFileSelected(InputFileChangeEventArgs e)
+    {
+        _taskAttachmentFile = e.File;
+    }
+
+    private async Task SubmitTaskAttachment()
+    {
+        if (!_taskAttachmentTaskId.HasValue || _taskAttachmentFile is null)
+        {
+            _message = "Choose a supported document file before attaching it to the task.";
+            return;
+        }
+
+        var extension = Path.GetExtension(_taskAttachmentFile.Name);
+        if (!AllowedExtensions.Contains(extension))
+        {
+            _message = "Unsupported file type. Please upload a supported business document such as PDF, Word, Excel, PowerPoint, image, or text.";
+            return;
+        }
+
+        if (_taskAttachmentFile.Size <= 0 || _taskAttachmentFile.Size > MaxUploadBytes)
+        {
+            _message = "The selected file is larger than the 25 MB limit. Please choose a file that is 25 MB or smaller.";
+            return;
+        }
+
+        var task = tasks?.FirstOrDefault(t => t.TaskId == _taskAttachmentTaskId.Value);
+        var request = new DocumentUploadRequest
+        {
+            Title = string.IsNullOrWhiteSpace(_taskAttachmentTitle) ? task?.Title ?? "Task Attachment" : _taskAttachmentTitle,
+            Category = _taskAttachmentCategory,
+            Description = task?.Description,
+            ProjectId = _taskAttachmentProjectId ?? task?.ProjectId,
+            FileName = _taskAttachmentFile.Name,
+            FileSizeBytes = _taskAttachmentFile.Size,
+            ContentType = _taskAttachmentFile.ContentType,
+            Tags = $"task:{_taskAttachmentTaskId.Value}"
+        };
+
+        using var stream = _taskAttachmentFile.OpenReadStream(25 * 1024 * 1024 + 1024);
+        var result = await DocumentService.UploadAsync(request, stream, currentUserId);
+
+        if (result.Success)
+        {
+            _message = "Task document attached.";
+            CancelTaskAttachment();
+        }
+        else
+        {
+            _message = result.Message;
+        }
     }
 
     private string GetPriorityColor(TaskPriority priority)

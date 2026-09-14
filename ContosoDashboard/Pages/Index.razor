@@ -52,6 +52,14 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-3 mb-3">
+                <div class="card summary-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Documents</h5>
+                        <p class="card-text display-4 text-success">@summary.DocumentCount</p>
+                    </div>
+                </div>
+            </div>
         </div>
     }
 
@@ -118,12 +126,50 @@
             }
         </div>
     </div>
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Recent Documents</h3>
+                        <a href="/documents" class="btn btn-sm btn-outline-primary">Open Documents</a>
+                    </div>
+                    @if (recentDocuments != null && recentDocuments.Any())
+                    {
+                        <div class="list-group mt-3">
+                            @foreach (var doc in recentDocuments)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@doc.Title</strong>
+                                            <div class="small text-muted">@doc.Category • @doc.UploadedDate.ToLocalTime().ToString("MMM dd, yyyy")</div>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <a class="btn btn-outline-primary" href="/api/documents/@doc.DocumentId/preview" target="_blank">Preview</a>
+                                            <a class="btn btn-outline-secondary" href="/api/documents/@doc.DocumentId/download" download="@doc.FileName">Download</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mt-3 mb-0">No recent documents available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
     private DashboardSummary? summary;
     private List<Announcement>? announcements;
     private List<Notification>? recentNotifications;
+    private List<Document>? recentDocuments;
     private string userName = "User";
     private int currentUserId = 0;
 
@@ -146,6 +192,7 @@
             summary = await DashboardService.GetDashboardSummaryAsync(currentUserId);
             announcements = await DashboardService.GetActiveAnnouncementsAsync();
             recentNotifications = await NotificationService.GetUserNotificationsAsync(currentUserId);
+            recentDocuments = await DashboardService.GetRecentDocumentsAsync(currentUserId);
         }
     }
 

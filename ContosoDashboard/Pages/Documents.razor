@@ -317,6 +317,22 @@
         return $"{bytes / (1024 * 1024)} MB";
     }
 
+    private static string? ValidateFileName(string fileName)
+    {
+        var simpleName = Path.GetFileName(fileName);
+        if (!string.Equals(fileName, simpleName, StringComparison.Ordinal))
+        {
+            return "Unsafe file name. Please choose a simple supported document file.";
+        }
+
+        if (simpleName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            return "Unsafe file name. Please choose a simple supported document file.";
+        }
+
+        return null;
+    }
+
     private void BeginEdit(Document doc)
     {
         _editingDocumentId = doc.DocumentId;
@@ -395,9 +411,17 @@
             return;
         }
 
+        var selectedFileError = ValidateSelectedFile(_replacementFile);
+        if (selectedFileError is not null)
+        {
+            _error = selectedFileError;
+            _message = selectedFileError;
+            return;
+        }
+
         try
         {
-            using var stream = _replacementFile.OpenReadStream(25 * 1024 * 1024 + 1024);
+            using var stream = _replacementFile.OpenReadStream(MaxUploadBytes + 1024);
             var ok = await DocumentService.ReplaceDocumentFileAsync(_replacingDocumentId.Value, _currentUserId,
                 stream,
                 _replacementFile.Name,
@@ -406,7 +430,7 @@
 
             if (!ok)
             {
-                _error = "You are not allowed to replace this file.";
+                _error = "You are not allowed to replace this file or the selected file failed validation.";
                 _message = _error;
                 return;
             }
@@ -542,6 +566,12 @@
 
     private string? ValidateSelectedFile(IBrowserFile file)
     {
+        var fileNameSafetyError = ValidateFileName(file.Name);
+        if (fileNameSafetyError is not null)
+        {
+            return fileNameSafetyError;
+        }
+
         var extension = Path.GetExtension(file.Name);
         if (!AllowedExtensions.Contains(extension))
         {

@@ -90,6 +90,16 @@ public class DocumentService
         var validation = ValidateUploadRequest(request);
         if (!validation.Success)
         {
+            await _dbContext.DocumentActivityLogs.AddAsync(new DocumentActivityLog
+            {
+                DocumentId = 0,
+                UserId = uploaderUserId,
+                Action = DocumentActivityAction.Reject,
+                Details = $"Upload rejected during validation: {validation.Message}",
+                CreatedDate = DateTime.UtcNow
+            }, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
             return validation;
         }
 
@@ -490,6 +500,17 @@ public class DocumentService
             (document.Project != null && document.Project.ProjectManagerId == requestingUserId);
 
         if (!canManage)
+        {
+            return false;
+        }
+
+        var extension = Path.GetExtension(fileName);
+        if (!AllowedExtensions.Contains(extension))
+        {
+            return false;
+        }
+
+        if (fileSizeBytes <= 0 || fileSizeBytes > MaxBytes)
         {
             return false;
         }

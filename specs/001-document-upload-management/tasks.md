@@ -98,10 +98,10 @@
 
 **Purpose**: Connect the new document workflow into the broader dashboard and protect the implementation.
 
-- [ ] T027 [P] Add a recent document widget and document count card integration in `ContosoDashboard/Pages/Index.razor`
-- [ ] T028 [P] Add document task attachment hooks in `ContosoDashboard/Pages/Tasks.razor`
-- [ ] T029 Security hardening pass across `ContosoDashboard/Services/DocumentService.cs`, `ContosoDashboard/Services/LocalFileStorageService.cs`, and `ContosoDashboard/Pages/Documents.razor`
-- [ ] T030 [P] Run the quickstart validation scenario in `specs/001-document-upload-management/quickstart.md`
+- [X] T027 [P] Add a recent document widget and document count card integration in `ContosoDashboard/Pages/Index.razor`
+- [X] T028 [P] Add document task attachment hooks in `ContosoDashboard/Pages/Tasks.razor`
+- [X] T029 Security hardening pass across `ContosoDashboard/Services/DocumentService.cs`, `ContosoDashboard/Services/LocalFileStorageService.cs`, and `ContosoDashboard/Pages/Documents.razor`
+- [X] T030 [P] Run the quickstart validation scenario in `specs/001-document-upload-management/quickstart.md`
 
 ---
 
