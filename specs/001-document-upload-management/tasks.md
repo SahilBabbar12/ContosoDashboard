@@ -66,11 +66,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T017 [P] [US2] Add repository query helpers for document listing, project view, and personal documents in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T018 [P] [US2] Implement filter, sort, and search metadata support in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T019 [US2] Add project and personal document browse UI in `ContosoDashboard/Pages/Projects.razor`
-- [ ] T020 [US2] Add document download and preview authorization checks in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T021 [US2] Surface document previews and download actions in `ContosoDashboard/Pages/Documents.razor`
+- [X] T017 [P] [US2] Add repository query helpers for document listing, project view, and personal documents in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T018 [P] [US2] Implement filter, sort, and search metadata support in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T019 [US2] Add project and personal document browse UI in `ContosoDashboard/Pages/Projects.razor`
+- [X] T020 [US2] Add document download and preview authorization checks in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T021 [US2] Surface document previews and download actions in `ContosoDashboard/Pages/Documents.razor`
 
 **Checkpoint**: At this point, User Stories 1 and 2 should both work independently.
 
@@ -84,11 +84,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T022 [P] [US3] Add document metadata edit, file replacement, and delete workflow hooks in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T023 [P] [US3] Add `DocumentShare` creation and revocation permission processing in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T024 [US3] Add shared-document and recipient notification integration in `ContosoDashboard/Services/NotificationService.cs`
-- [ ] T025 [US3] Add audit logging for document upload, download, share, edit, replace, and delete events in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T026 [US3] Add an administrator-facing document activity reporting surface in `ContosoDashboard/Pages/Notifications.razor`
+- [X] T022 [P] [US3] Add document metadata edit, file replacement, and delete workflow hooks in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T023 [P] [US3] Add `DocumentShare` creation and revocation permission processing in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T024 [US3] Add shared-document and recipient notification integration in `ContosoDashboard/Services/NotificationService.cs`
+- [X] T025 [US3] Add audit logging for document upload, download, share, edit, replace, and delete events in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T026 [US3] Add an administrator-facing document activity reporting surface in `ContosoDashboard/Pages/Notifications.razor`
 
 **Checkpoint**: All user stories should now be independently functional.
 

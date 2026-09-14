@@ -2,7 +2,9 @@
 @attribute [Authorize]
 @using ContosoDashboard.Services
 @using ContosoDashboard.Models
+@using Microsoft.EntityFrameworkCore
 @using System.IO
+@using System.Security.Claims
 @inject DocumentService DocumentService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -22,6 +24,92 @@
     {
         <div class="alert @(string.IsNullOrWhiteSpace(_error) ? "alert-success" : "alert-danger")">
             @_message
+        </div>
+    }
+
+    @if (_editingDocumentId.HasValue)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Edit Document Metadata</h3>
+                <EditForm Model="_editModel" OnValidSubmit="SubmitMetadataEdit">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Title</label>
+                            <InputText class="form-control" @bind-Value="_editModel.Title" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <InputSelect class="form-select" @bind-Value="_editModel.Category">
+                                @foreach (var category in Enum.GetValues<DocumentCategory>())
+                                {
+                                    <option value="@category">@category</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Project Id</label>
+                            <InputNumber class="form-control" @bind-Value="_editModel.ProjectId" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tags</label>
+                            <InputText class="form-control" @bind-Value="_editModel.Tags" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <InputTextArea class="form-control" @bind-Value="_editModel.Description" />
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-success" type="submit">Save Metadata</button>
+                        <button class="btn btn-secondary" type="button" @onclick="CancelEditor">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    @if (_replacingDocumentId.HasValue)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Replace Document File</h3>
+                <InputFile class="form-control" OnChange="HandleReplacementFileSelected" />
+                <div class="mt-3">
+                    <button class="btn btn-warning" type="button" @onclick="SubmitFileReplacement">Replace File</button>
+                    <button class="btn btn-secondary" type="button" @onclick="CancelReplace">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_sharingDocumentId.HasValue)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Share Document</h3>
+                <EditForm Model="_shareRequest" OnValidSubmit="SubmitShare">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Recipient User Id</label>
+                            <InputNumber class="form-control" @bind-Value="_shareRequest.RecipientUserId" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Access</label>
+                            <InputSelect class="form-select" @bind-Value="_shareRequest.AccessLevel">
+                                @foreach (var access in Enum.GetValues<DocumentShareAccess>())
+                                {
+                                    <option value="@access">@access</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-success" type="submit">Share</button>
+                        <button class="btn btn-secondary" type="button" @onclick="CancelShare">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
         </div>
     }
 
@@ -73,6 +161,96 @@
             </div>
         </div>
     }
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label">Search documents</label>
+                    <input class="form-control" @bind="_searchTerm" placeholder="Title, description, tag, uploader, project" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" @bind="_categoryFilter">
+                        <option value="">All categories</option>
+                        @foreach (var category in Enum.GetValues<DocumentCategory>())
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Sort</label>
+                    <select class="form-select" @bind="_sort">
+                        <option value="UploadedDateDesc">Newest</option>
+                        <option value="Title">Title A-Z</option>
+                        <option value="Category">Category</option>
+                        <option value="Project">Project</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-primary w-100" @onclick="LoadDocuments">Filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_documents is null)
+    {
+        <p class="mt-3"><em>Loading documents...</em></p>
+    }
+    else if (!_documents.Any())
+    {
+        <div class="alert alert-info mt-3">No documents found for the current search and authorization view.</div>
+    }
+    else
+    {
+        <div class="table-responsive mt-3">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Project</th>
+                        <th>Uploader</th>
+                        <th>Uploaded</th>
+                        <th>Size</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in _documents)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@doc.Title</strong>
+                                @if (!string.IsNullOrWhiteSpace(doc.Description))
+                                {
+                                    <div class="small text-muted">@doc.Description</div>
+                                }
+                            </td>
+                            <td>@doc.Category</td>
+                            <td>@(doc.Project?.Name ?? "Personal")</td>
+                            <td>@doc.Uploader.DisplayName</td>
+                            <td>@doc.UploadedDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
+                            <td>@FormatBytes(doc.FileSizeBytes)</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-sm btn-outline-primary" href="/api/documents/@doc.DocumentId/preview" target="_blank">Preview</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="/api/documents/@doc.DocumentId/download" download="@doc.FileName">Download</a>
+                                    <button class="btn btn-sm btn-outline-warning" @onclick="() => BeginEdit(doc)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-info" @onclick="() => BeginReplace(doc)">Replace</button>
+                                    <button class="btn btn-sm btn-outline-success" @onclick="() => BeginShare(doc)">Share</button>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => RevokeFirstShare(doc)">Revoke</button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDocument(doc.DocumentId)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @code {
@@ -83,10 +261,255 @@
     };
 
     private readonly DocumentUploadRequest _uploadRequest = new();
+    private readonly DocumentMetadataEditModel _editModel = new();
+    private DocumentShareRequest _shareRequest = new();
     private bool _showUploadForm;
     private string? _message;
     private string? _error;
     private IBrowserFile? _selectedFile;
+    private IBrowserFile? _replacementFile;
+    private List<Document>? _documents;
+    private int _currentUserId;
+    private string? _searchTerm;
+    private string? _categoryFilter;
+    private string _sort = "UploadedDateDesc";
+    private int? _editingDocumentId;
+    private int? _replacingDocumentId;
+    private int? _sharingDocumentId;
+
+    private sealed class DocumentMetadataEditModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Tags { get; set; }
+        public string Category { get; set; } = DocumentCategory.Other.ToString();
+        public int? ProjectId { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var claims = authState.User;
+        var userIdClaim = claims.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _currentUserId = userId;
+        }
+
+        await LoadDocuments();
+    }
+
+    private async Task LoadDocuments()
+    {
+        if (_currentUserId == 0)
+        {
+            _documents = new List<Document>();
+            return;
+        }
+
+        _documents = await DocumentService.SearchDocumentsAsync(_currentUserId, _searchTerm, null, _categoryFilter, _sort);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024} KB";
+        return $"{bytes / (1024 * 1024)} MB";
+    }
+
+    private void BeginEdit(Document doc)
+    {
+        _editingDocumentId = doc.DocumentId;
+        _editModel.Title = doc.Title;
+        _editModel.Description = doc.Description;
+        _editModel.Tags = doc.Tags;
+        _editModel.Category = doc.Category.ToString();
+        _editModel.ProjectId = doc.ProjectId;
+        _message = null;
+        _error = null;
+    }
+
+    private void CancelEditor()
+    {
+        _editingDocumentId = null;
+        _message = null;
+        _error = null;
+    }
+
+    private async Task SubmitMetadataEdit()
+    {
+        if (!_editingDocumentId.HasValue)
+        {
+            return;
+        }
+
+        var ok = await DocumentService.UpdateDocumentAsync(_editingDocumentId.Value, _currentUserId,
+            _editModel.Title,
+            _editModel.Description,
+            _editModel.Tags,
+            _editModel.Category,
+            _editModel.ProjectId);
+
+        if (!ok)
+        {
+            _error = "You are not allowed to edit this metadata.";
+            _message = _error;
+            return;
+        }
+
+        _editingDocumentId = null;
+        _message = "Document metadata updated.";
+        _error = null;
+        await LoadDocuments();
+    }
+
+    private void BeginReplace(Document doc)
+    {
+        _replacingDocumentId = doc.DocumentId;
+        _replacementFile = null;
+        _message = null;
+        _error = null;
+    }
+
+    private void CancelReplace()
+    {
+        _replacingDocumentId = null;
+        _replacementFile = null;
+        _message = null;
+        _error = null;
+    }
+
+    private void HandleReplacementFileSelected(InputFileChangeEventArgs e)
+    {
+        _replacementFile = e.File;
+        _message = null;
+        _error = null;
+    }
+
+    private async Task SubmitFileReplacement()
+    {
+        if (!_replacingDocumentId.HasValue || _replacementFile is null)
+        {
+            _error = "Choose a file before replacing.";
+            _message = _error;
+            return;
+        }
+
+        try
+        {
+            using var stream = _replacementFile.OpenReadStream(25 * 1024 * 1024 + 1024);
+            var ok = await DocumentService.ReplaceDocumentFileAsync(_replacingDocumentId.Value, _currentUserId,
+                stream,
+                _replacementFile.Name,
+                _replacementFile.ContentType,
+                _replacementFile.Size);
+
+            if (!ok)
+            {
+                _error = "You are not allowed to replace this file.";
+                _message = _error;
+                return;
+            }
+
+            _replacingDocumentId = null;
+            _replacementFile = null;
+            _message = "Document file replaced.";
+            _error = null;
+            await LoadDocuments();
+        }
+        catch (IOException ex)
+        {
+            _error = "The selected file is larger than the 25 MB limit. Please choose a file that is 25 MB or smaller.";
+            _message = _error;
+        }
+    }
+
+    private void BeginShare(Document doc)
+    {
+        _sharingDocumentId = doc.DocumentId;
+        _shareRequest = new DocumentShareRequest { AccessLevel = DocumentShareAccess.Read };
+        _message = null;
+        _error = null;
+    }
+
+    private void CancelShare()
+    {
+        _sharingDocumentId = null;
+        _message = null;
+        _error = null;
+    }
+
+    private async Task SubmitShare()
+    {
+        if (!_sharingDocumentId.HasValue)
+        {
+            return;
+        }
+
+        try
+        {
+            var ok = await DocumentService.ShareDocumentAsync(_sharingDocumentId.Value, _currentUserId, _shareRequest);
+            if (!ok)
+            {
+                _error = "Unable to share this document. Confirm the recipient user exists and that you can manage the document.";
+                _message = _error;
+                return;
+            }
+
+            _sharingDocumentId = null;
+            _message = "Document shared successfully.";
+            _error = null;
+            await LoadDocuments();
+        }
+        catch (DbUpdateException)
+        {
+            _error = "Unable to share this document. Confirm the recipient user exists and that you can manage the document.";
+            _message = _error;
+        }
+        catch (Exception)
+        {
+            _error = "Unable to share this document. Confirm the recipient user exists and that you can manage the document.";
+            _message = _error;
+        }
+    }
+
+    private async Task RevokeFirstShare(Document doc)
+    {
+        var share = doc.Shares.FirstOrDefault(s => s.RevokedDate == null);
+        if (share == null)
+        {
+            _error = "No active share exists to revoke.";
+            _message = _error;
+            return;
+        }
+
+        var ok = await DocumentService.RevokeDocumentShareAsync(doc.DocumentId, _currentUserId, share.UserId);
+        if (!ok)
+        {
+            _error = "You are not allowed to revoke that document share.";
+            _message = _error;
+            return;
+        }
+
+        _message = "Document access was revoked.";
+        _error = null;
+        await LoadDocuments();
+    }
+
+    private async Task DeleteDocument(int documentId)
+    {
+        var ok = await DocumentService.DeleteDocumentAsync(documentId, _currentUserId);
+        if (!ok)
+        {
+            _error = "You are not allowed to delete this document.";
+            _message = _error;
+            return;
+        }
+
+        _message = "Document deleted.";
+        _error = null;
+        await LoadDocuments();
+    }
 
     private void ShowUploadForm() => _showUploadForm = true;
 
@@ -177,6 +600,7 @@
                 _uploadRequest.Tags = string.Empty;
                 _uploadRequest.ProjectId = null;
                 _selectedFile = null;
+                await LoadDocuments();
             }
         }
         catch (IOException)

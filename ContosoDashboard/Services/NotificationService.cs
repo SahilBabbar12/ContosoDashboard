@@ -8,6 +8,7 @@ public interface INotificationService
 {
     Task<List<Notification>> GetUserNotificationsAsync(int userId, bool unreadOnly = false);
     Task<Notification> CreateNotificationAsync(Notification notification);
+    Task<Notification> CreateDocumentNotificationAsync(int userId, string title, string message, NotificationType type = NotificationType.DocumentShare, NotificationPriority priority = NotificationPriority.Informational);
     Task<bool> MarkAsReadAsync(int notificationId, int requestingUserId);
     Task<int> GetUnreadCountAsync(int userId);
 }
@@ -44,6 +45,24 @@ public class NotificationService : INotificationService
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
+        return notification;
+    }
+
+    public async Task<Notification> CreateDocumentNotificationAsync(int userId, string title, string message, NotificationType type = NotificationType.DocumentShare, NotificationPriority priority = NotificationPriority.Informational)
+    {
+        var notification = new Notification
+        {
+            UserId = userId,
+            Title = title,
+            Message = message,
+            Type = type,
+            Priority = priority,
+            CreatedDate = DateTime.UtcNow,
+            IsRead = false
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
         return notification;
     }
 

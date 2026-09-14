@@ -5,6 +5,7 @@
 @using System.Security.Claims
 @attribute [Authorize]
 @inject INotificationService NotificationService
+@inject DocumentService DocumentService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Notifications - ContosoDashboard</PageTitle>
@@ -77,15 +78,69 @@
             </div>
         </div>
     }
+
+    @if (isAdmin)
+    {
+        <div class="row mt-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h5 class="card-title mb-0">Document Activity Report</h5>
+                            <span class="badge bg-dark">Admin only</span>
+                        </div>
+
+                        @if (adminLogs == null)
+                        {
+                            <p class="text-muted mt-3 mb-0">Loading activity logs...</p>
+                        }
+                        else if (!adminLogs.Any())
+                        {
+                            <p class="text-muted mt-3 mb-0">No document activity records found.</p>
+                        }
+                        else
+                        {
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Document</th>
+                                            <th>User</th>
+                                            <th>Action</th>
+                                            <th>Details</th>
+                                            <th>Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var log in adminLogs)
+                                        {
+                                            <tr>
+                                                <td>@(log.Document?.Title ?? $"#{log.DocumentId}")</td>
+                                                <td>@(log.User?.DisplayName ?? $"User #{log.UserId}")</td>
+                                                <td>@log.Action</td>
+                                                <td>@(log.Details ?? "-")</td>
+                                                <td>@log.CreatedDate.ToLocalTime().ToString("g")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
     private List<Notification>? notifications;
+    private List<DocumentActivityLog>? adminLogs;
     private int currentUserId = 0;
+    private bool isAdmin = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Get current user ID from authentication claims
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
@@ -94,9 +149,16 @@
             currentUserId = userId;
         }
 
+        isAdmin = user.IsInRole("Administrator");
+
         if (currentUserId > 0)
         {
             await LoadNotifications();
+
+            if (isAdmin)
+            {
+                adminLogs = await DocumentService.GetAllDocumentActivityLogsAsync(currentUserId);
+            }
         }
     }
 

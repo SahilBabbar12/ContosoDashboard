@@ -3,6 +3,7 @@ using ContosoDashboard.Data;
 using ContosoDashboard.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -107,6 +108,77 @@ app.UseRouting();
 // Enable authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/api/documents/{documentId:int}/preview", async (int documentId, HttpContext http, DocumentService documentService, IFileStorageService storageService) =>
+{
+    var userIdClaim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+    {
+        return Results.Forbid();
+    }
+
+    if (!await documentService.CanPreviewDocumentAsync(documentId, userId))
+    {
+        return Results.Forbid();
+    }
+
+    var doc = await documentService.GetDocumentByIdAsync(documentId);
+    if (doc is null)
+    {
+        return Results.NotFound();
+    }
+
+    try
+    {
+        var stream = await storageService.DownloadAsync(doc.StoragePath);
+        var mime = string.IsNullOrWhiteSpace(doc.ContentType) ? "application/octet-stream" : doc.ContentType;
+        if (doc.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
+            doc.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
+            doc.ContentType.Equals("text/plain", StringComparison.OrdinalIgnoreCase) ||
+            doc.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) ||
+            doc.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.File(stream, mime, enableRangeProcessing: true);
+        }
+
+        return Results.File(stream, mime, doc.FileName, enableRangeProcessing: true);
+    }
+    catch (FileNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+app.MapGet("/api/documents/{documentId:int}/download", async (int documentId, HttpContext http, DocumentService documentService, IFileStorageService storageService) =>
+{
+    var userIdClaim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+    {
+        return Results.Forbid();
+    }
+
+    if (!await documentService.CanDownloadDocumentAsync(documentId, userId))
+    {
+        return Results.Forbid();
+    }
+
+    var doc = await documentService.GetDocumentByIdAsync(documentId);
+    if (doc is null)
+    {
+        return Results.NotFound();
+    }
+
+    try
+    {
+        var stream = await storageService.DownloadAsync(doc.StoragePath);
+        var contentType = string.IsNullOrWhiteSpace(doc.ContentType) ? "application/octet-stream" : doc.ContentType;
+        return Results.File(stream, contentType, doc.FileName, enableRangeProcessing: true);
+    }
+    catch (FileNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

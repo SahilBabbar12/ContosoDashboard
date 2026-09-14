@@ -5,6 +5,7 @@
 @using System.Security.Claims
 @attribute [Authorize]
 @inject IProjectService ProjectService
+@inject DocumentService DocumentService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>My Projects - ContosoDashboard</PageTitle>
@@ -76,6 +77,33 @@
                                 <small class="text-muted">Tasks: @project.Tasks.Count</small><br />
                                 <small class="text-muted">Team Members: @project.ProjectMembers.Count</small>
                             </div>
+
+                            <hr />
+                            <div class="document-list">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>Project Documents</strong>
+                                    <span class="badge bg-light text-dark">@GetProjectDocumentCount(project.ProjectId)</span>
+                                </div>
+                                @if (projectDocuments.TryGetValue(project.ProjectId, out var docs) && docs.Any())
+                                {
+                                    <ul class="list-group list-group-flush mt-2">
+                                        @foreach (var doc in docs.Take(4))
+                                        {
+                                            <li class="list-group-item px-0">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span>@doc.Title</span>
+                                                    <span class="text-muted">@doc.UploadedDate.ToShortDateString()</span>
+                                                </div>
+                                                <div class="small text-muted">@doc.Uploader.DisplayName · @doc.Category</div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <div class="text-muted small mt-2">No project documents visible.</div>
+                                }
+                            </div>
                         </div>
                         <div class="card-footer">
                             <a href="/projects/@project.ProjectId" class="btn btn-primary btn-sm">
@@ -92,10 +120,10 @@
 @code {
     private List<Project>? projects;
     private int currentUserId = 0;
+    private Dictionary<int, List<Document>> projectDocuments = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // Get current user ID from authentication claims
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
@@ -107,7 +135,17 @@
         if (currentUserId > 0)
         {
             projects = await ProjectService.GetUserProjectsAsync(currentUserId);
+            foreach (var project in projects)
+            {
+                var docs = await DocumentService.GetProjectDocumentsAsync(project.ProjectId, currentUserId);
+                projectDocuments[project.ProjectId] = docs;
+            }
         }
+    }
+
+    private int GetProjectDocumentCount(int projectId)
+    {
+        return projectDocuments.TryGetValue(projectId, out var docs) ? docs.Count : 0;
     }
 
     private string GetStatusColor(ProjectStatus status)
